@@ -1,0 +1,272 @@
+.diff-checker {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border);
+}
+
+.diff-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.diff-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.diff-toolbar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-right: 8px;
+}
+
+.diff-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.diff-btn {
+  padding: 4px 10px;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 4px;
+  color: var(--btn-text);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.diff-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--text-heading);
+}
+
+.diff-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.diff-btn-close {
+  background: transparent;
+  border-color: #666;
+}
+
+.diff-btn-close:hover {
+  background: rgba(220, 53, 69, 0.2);
+  border-color: #dc3545;
+  color: #ff8a9a;
+}
+
+.diff-stats {
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 0 8px;
+}
+
+.diff-stats strong {
+  color: var(--warning);
+}
+
+.diff-panes-labels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  padding: 0 8px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.diff-pane-label {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.diff-pane-label:first-child {
+  border-right: 1px solid var(--border);
+}
+
+.diff-split {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  position: relative;
+}
+
+.diff-pane-host {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.diff-pane-host-left {
+  border-right: 2px solid var(--accent);
+}
+
+.diff-pane-host-right {
+  position: relative;
+}
+
+.diff-pane-editor {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+}
+
+/* Center junction overlay — merge arrows sit on the split line */
+.diff-gutter-overlay {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 52px;
+  transform: translateX(-50%);
+  z-index: 20;
+  pointer-events: none;
+}
+
+.diff-gutter-actions {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: auto;
+}
+
+.diff-merge-btn {
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid #007acc;
+  border-radius: 4px;
+  background: #1e3a5f;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.diff-merge-btn:hover {
+  transform: scale(1.08);
+}
+
+.diff-merge-to-left:hover {
+  background: #2e7d32;
+  border-color: #4caf50;
+}
+
+.diff-merge-to-right:hover {
+  background: #2e7d32;
+  border-color: #4caf50;
+}
+
+.diff-paste-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay-bg);
+  z-index: 5;
+  cursor: text;
+}
+
+.diff-paste-card {
+  text-align: center;
+  padding: 24px 32px;
+  border: 1px dashed #555;
+  border-radius: 8px;
+  background: var(--card-bg);
+  max-width: 360px;
+}
+
+.diff-paste-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.diff-paste-desc {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.diff-paste-desc kbd {
+  padding: 2px 6px;
+  background: #3c3c3c;
+  border: 1px solid #555;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #ccc;
+}
+
+.diff-paste-btn {
+  font-size: 12px !important;
+  padding: 8px 16px !important;
+}
+
+.diff-stats-pending {
+  color: #6b9fd4 !important;
+  font-style: italic;
+}
+
+.diff-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.diff-btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+/* Monaco line decorations */
+.diff-line-removed {
+  background-color: var(--diff-removed) !important;
+}
+
+.diff-line-added {
+  background-color: var(--diff-added) !important;
+}
+
+.diff-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 4px 12px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}

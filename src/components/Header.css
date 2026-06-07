@@ -1,0 +1,59 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 16px;
+  height: 50px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-logo {
+  width: 32px;
+  height: 32px;
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.header-btn {
+  background: transparent;
+  border: 1px solid var(--btn-border);
+  color: var(--btn-text);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.header-btn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent);
+  color: var(--text-heading);
+}
+
+.header-btn-active {
+  background: var(--accent-active-bg);
+  border-color: var(--accent);
+  color: var(--text-heading);
+}
+
+.header-btn-theme {
+  padding: 6px 10px;
+  font-size: 15px;
+}

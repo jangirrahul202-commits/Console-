@@ -1,0 +1,79 @@
+.settings {
+  padding: 24px 32px;
+  max-width: 560px;
+  color: var(--text-primary);
+}
+
+.settings-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-bottom: 24px;
+}
+
+.settings-section {
+  margin-bottom: 28px;
+}
+
+.settings-section h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.theme-options {
+  display: flex;
+  gap: 12px;
+}
+
+.theme-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.theme-option:hover {
+  border-color: var(--accent);
+}
+
+.theme-option.active {
+  border-color: var(--accent);
+  background: var(--accent-active-bg);
+}
+
+.theme-option-icon {
+  font-size: 28px;
+}
+
+.theme-option-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.settings-close {
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 4px;
+  color: var(--btn-text);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.settings-close:hover {
+  border-color: var(--accent);
+  color: var(--text-heading);
+}

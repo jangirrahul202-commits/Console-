@@ -1,0 +1,93 @@
+═══════════════════════════════════════════════════════════════
+  📋 CONSOLE+ INSTALLATION CHECKLIST
+═══════════════════════════════════════════════════════════════
+
+STEP 1: PREPARE CHROME/EDGE
+═══════════════════════════════════════════════════════════════
+[ ] Open Chrome or Edge browser
+[ ] Navigate to: chrome://extensions/
+[ ] Enable "Developer mode" (toggle in top-right)
+
+STEP 2: LOAD EXTENSION
+═══════════════════════════════════════════════════════════════
+[ ] Click "Load unpacked" button
+[ ] Navigate to folder: /Users/rahuljangir/rahul work/dist/
+[ ] Click "Select" or "Open"
+[ ] Verify "Console+ for Salesforce v1.2.3" appears
+
+STEP 3: PIN ICON (OPTIONAL)
+═══════════════════════════════════════════════════════════════
+[ ] Click puzzle icon 🧩 in toolbar
+[ ] Find "Console+ for Salesforce"
+[ ] Click pin icon 📌
+[ ] Icon now visible in toolbar
+
+STEP 4: TEST BASIC FUNCTIONALITY
+═══════════════════════════════════════════════════════════════
+[ ] Open Salesforce org (login.salesforce.com)
+[ ] Complete login
+[ ] Click Console+ icon in toolbar
+[ ] New window opens
+[ ] Loading animation appears
+[ ] Classes load in left sidebar
+[ ] Click any class
+[ ] Code appears in editor
+
+STEP 5: TEST UNIFIED BOTTOM PANEL ⭐ KEY FEATURE
+═══════════════════════════════════════════════════════════════
+[ ] Bottom panel visible with two tabs
+[ ] Click "📊 Coverage" tab
+[ ] Click "Load All Coverage" button
+[ ] Coverage stats display (if available)
+[ ] Click "🧪 Test Results" tab
+[ ] Select a test class
+[ ] Click "▶️ Run Tests"
+[ ] Wait 30-60 seconds
+[ ] Test results appear
+[ ] Switch to different class
+[ ] Test results STILL VISIBLE ✅ (This is the key improvement!)
+
+STEP 6: TEST PANEL RESIZING
+═══════════════════════════════════════════════════════════════
+[ ] Hover over top edge of bottom panel
+[ ] Cursor changes to ↕️
+[ ] Drag up and down
+[ ] Panel resizes smoothly
+[ ] Hover over right edge of sidebar
+[ ] Cursor changes to ↔️
+[ ] Drag left and right
+[ ] Sidebar resizes smoothly
+
+STEP 7: TEST PANEL TOGGLE
+═══════════════════════════════════════════════════════════════
+[ ] Click "▼" button in bottom panel header
+[ ] Panel collapses/hides
+[ ] "▲" button appears at bottom of screen
+[ ] Click "▲" button
+[ ] Panel expands/shows
+
+STEP 8: TEST ADDITIONAL FEATURES
+═══════════════════════════════════════════════════════════════
+[ ] Click "💾 Save" after editing code
+[ ] Check "PROBLEMS" panel for linting issues
+[ ] Click "SOQL Query" button (opens placeholder)
+[ ] Click "Diff Checker" button (opens placeholder)
+[ ] Click "Debug Logs" button (opens placeholder)
+[ ] Click "⚙️ Settings" button (opens placeholder)
+
+═══════════════════════════════════════════════════════════════
+  ✅ INSTALLATION COMPLETE!
+═══════════════════════════════════════════════════════════════
+
+If all items are checked, your Console+ extension is 
+successfully installed and working correctly!
+
+Build Version: 1.2.3
+Build Date: February 14, 2026
+Status: ✅ Production Ready
+
+For detailed troubleshooting, see:
+- TESTING_GUIDE.md
+- INSTALL_AND_TEST.md
+
+═══════════════════════════════════════════════════════════════

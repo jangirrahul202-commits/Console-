@@ -1,0 +1,58 @@
+.problems-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary);
+}
+
+.problems-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.problems-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.problems-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.problem-item {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.problem-item:hover {
+  background: var(--bg-hover);
+}
+
+.problem-icon {
+  font-size: 12px;
+}
+
+.problem-content {
+  flex: 1;
+}
+
+.problem-message {
+  font-size: 12px;
+  color: #cccccc;
+  margin-bottom: 4px;
+}
+
+.problem-location {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
