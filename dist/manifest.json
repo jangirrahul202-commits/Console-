@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Console+ for Salesforce",
   "version": "1.3.0",
-  "description": "Advanced Apex developer console with code coverage, SOQL builder, diff checker, debug logs, and AI-powered insights. Opens as a standalone window like Lightning Studio.",
+  "description": "Apex developer console with multi-tab editor, test results, code coverage, diff checker, and light/dark themes. Opens as a standalone window from Salesforce.",
   "author": "Salesforce Developer Tools",
   "homepage_url": "https://github.com/salesforce-apex-console",
   "permissions": [

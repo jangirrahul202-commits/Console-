@@ -5,10 +5,7 @@ import Sidebar from './components/Sidebar';
 import CodeEditor from './components/CodeEditor';
 import UnifiedBottomPanel from './components/UnifiedBottomPanel';
 import ProblemsPanel from './components/ProblemsPanel';
-import SoqlQueryBuilder from './components/SoqlQueryBuilder';
-import DebugLogViewer from './components/DebugLogViewer';
 import InlineDiffChecker from './components/InlineDiffChecker';
-import Settings from './components/Settings';
 import LoadingSpinner from './components/LoadingSpinner';
 import { TabBar } from './components/TabBar';
 import './App.css';
@@ -19,9 +16,7 @@ function App() {
     selectedClass,
     classBody,
     isLoading,
-    soqlBuilderOpen,
     diffCheckerOpen,
-    panelVisibility,
     setSession,
     problems,
     error,
@@ -92,42 +87,6 @@ function App() {
     return (
       <div className="app-loading">
         <LoadingSpinner message="Initializing Console+..." size="large" />
-      </div>
-    );
-  }
-
-  // Show SOQL Builder as full overlay
-  if (soqlBuilderOpen) {
-    return (
-      <div className="app">
-        <Header />
-        <div className="app-content">
-          <SoqlQueryBuilder />
-        </div>
-      </div>
-    );
-  }
-
-  // Show Debug Log Viewer as full overlay
-  if (panelVisibility.debugLogs) {
-    return (
-      <div className="app">
-        <Header />
-        <div className="app-content">
-          <DebugLogViewer />
-        </div>
-      </div>
-    );
-  }
-
-  // Show Settings as full overlay
-  if (panelVisibility.settings) {
-    return (
-      <div className="app">
-        <Header />
-        <div className="app-content">
-          <Settings />
-        </div>
       </div>
     );
   }

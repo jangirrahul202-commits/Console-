@@ -1,7 +1,6 @@
 import { useRef, useEffect } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import { useApexStore } from '../store/apex-store';
-import { detectSoqlQueries } from '../utils/linter';
 import { coveragePercent } from '../utils/coverage';
 import { editor } from 'monaco-editor';
 import './CodeEditor.css';
@@ -26,7 +25,6 @@ export default function CodeEditor({ classId, code, className }: CodeEditorProps
     saveCode,
     runTests,
     isRunningTest,
-    openSoqlBuilder,
     openDiffChecker,
     activeTabId,
     updateTabBody,
@@ -60,7 +58,6 @@ export default function CodeEditor({ classId, code, className }: CodeEditorProps
       model.setValue(code);
       ed.pushUndoStop();
     }
-    updateSoqlDecorations();
   }, [classId, code]);
 
   useEffect(() => {
@@ -74,9 +71,6 @@ export default function CodeEditor({ classId, code, className }: CodeEditorProps
     editorRef.current = editorInstance;
     monacoRef.current = monaco;
 
-    // Add SOQL query decorations
-    updateSoqlDecorations();
-    
     // Add coverage decorations if available
     updateCoverageDecorations();
 
@@ -84,36 +78,6 @@ export default function CodeEditor({ classId, code, className }: CodeEditorProps
     editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       handleSave();
     });
-
-    // Register click handler for glyph margin (for SOQL icon clicks)
-    editorInstance.onMouseDown((e) => {
-      if (e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) {
-        const lineNumber = e.target.position?.lineNumber;
-        if (lineNumber) {
-          const queries = detectSoqlQueries(code);
-          const query = queries.find(q => q.line === lineNumber);
-          if (query) {
-            openSoqlBuilder(query.query);
-          }
-        }
-      }
-    });
-  };
-
-  const updateSoqlDecorations = () => {
-    if (!editorRef.current || !monacoRef.current) return;
-
-    const queries = detectSoqlQueries(code);
-    const decorations = queries.map(q => ({
-      range: new monacoRef.current!.Range(q.line, 1, q.line, 1),
-      options: {
-        isWholeLine: false,
-        glyphMarginClassName: 'soql-query-glyph',
-        glyphMarginHoverMessage: { value: 'Click to open in Query Builder' }
-      }
-    }));
-
-    editorRef.current.deltaDecorations([], decorations);
   };
 
   const updateCoverageDecorations = () => {

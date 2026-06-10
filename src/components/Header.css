@@ -17,6 +17,8 @@
 .header-logo {
   width: 32px;
   height: 32px;
+  object-fit: contain;
+  border-radius: 6px;
 }
 
 .header-title {

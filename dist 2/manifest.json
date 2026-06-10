@@ -1,24 +1,19 @@
 {
   "manifest_version": 3,
   "name": "Console+ for Salesforce",
-  "version": "1.3.0",
-  "description": "Apex developer console with multi-tab editor, test results, code coverage, diff checker, and light/dark themes. Opens as a standalone window from Salesforce.",
+  "version": "1.2.2",
+  "description": "Advanced Apex developer console with code coverage, SOQL builder, diff checker, debug logs, and AI-powered insights. Opens as a standalone window like Lightning Studio.",
   "author": "Salesforce Developer Tools",
   "homepage_url": "https://github.com/salesforce-apex-console",
   "permissions": [
     "cookies",
     "storage",
     "activeTab",
-    "tabs",
-    "system.display",
-    "notifications"
+    "tabs"
   ],
   "host_permissions": [
     "*://*.salesforce.com/*",
-    "*://*.salesforce-setup.com/*",
-    "*://*.force.com/*",
-    "*://*.cloudforce.com/*",
-    "*://*.my.site.com/*"
+    "*://*.force.com/*"
   ],
   "background": {
     "service_worker": "service-worker-loader.js",
@@ -28,8 +23,8 @@
     "default_title": "Open Apex Console"
   },
   "icons": {
-    "16": "icons/icon-16.png",
-    "48": "icons/icon-48.png",
-    "128": "icons/icon-128.png"
+    "16": "icons/icon-no-bg.svg",
+    "48": "icons/icon-no-bg.svg",
+    "128": "icons/icon-no-bg.svg"
   }
 }
