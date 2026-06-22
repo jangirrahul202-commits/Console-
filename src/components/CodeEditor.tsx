@@ -1,7 +1,9 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import { useApexStore } from '../store/apex-store';
 import { coveragePercent } from '../utils/coverage';
+import { detectSoqlQueries } from '../utils/linter';
+import { isLikelyTestClass } from '../utils/test-class';
 import { editor } from 'monaco-editor';
 import './CodeEditor.css';
 
@@ -21,11 +23,13 @@ export default function CodeEditor({ classId, code, className }: CodeEditorProps
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const coverageDecorationsRef = useRef<string[]>([]);
+  const soqlDecorationsRef = useRef<string[]>([]);
   const {
     saveCode,
     runTests,
     isRunningTest,
     openDiffChecker,
+    openSoqlBuilder,
     activeTabId,
     updateTabBody,
     coverage,
@@ -33,14 +37,14 @@ export default function CodeEditor({ classId, code, className }: CodeEditorProps
     setCoverageVisible,
     refreshClassFromOrg,
     isLoading,
-    theme
+    theme,
+    testRunSettings,
+    setTestRunParallel
   } = useApexStore();
 
   const monacoTheme = theme === 'light' ? 'vs' : 'vs-dark';
 
-  // Check if this is a test class
-  const isTestClass = className.toLowerCase().endsWith('test') || 
-                      code.toLowerCase().includes('@istest');
+  const isTestClass = isLikelyTestClass(className) || code.toLowerCase().includes('@istest');
 
   // Get aggregate coverage for this class
   const classCoverage = coverage.get(classId);
@@ -67,12 +71,45 @@ export default function CodeEditor({ classId, code, className }: CodeEditorProps
     }
   }, [coverageVisible, classCoverage, classId]);
 
+  const updateSoqlDecorations = useCallback(() => {
+    if (!editorRef.current || !monacoRef.current) return;
+
+    const queries = detectSoqlQueries(code);
+    const decorations = queries.map(q => ({
+      range: new monacoRef.current!.Range(q.line, 1, q.line, 1),
+      options: {
+        glyphMarginClassName: 'soql-query-glyph',
+        glyphMarginHoverMessage: {
+          value: `Open in Data Explorer\n${q.query.length > 120 ? q.query.slice(0, 120) + '…' : q.query}`
+        }
+      }
+    }));
+
+    soqlDecorationsRef.current = editorRef.current.deltaDecorations(
+      soqlDecorationsRef.current,
+      decorations
+    );
+  }, [code]);
+
+  useEffect(() => {
+    updateSoqlDecorations();
+  }, [updateSoqlDecorations]);
+
   const handleEditorDidMount = (editorInstance: editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editorInstance;
     monacoRef.current = monaco;
 
     // Add coverage decorations if available
     updateCoverageDecorations();
+    updateSoqlDecorations();
+
+    editorInstance.onMouseDown(e => {
+      if (e.target.type !== monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) return;
+      const line = e.target.position?.lineNumber;
+      if (!line) return;
+      const match = detectSoqlQueries(editorInstance.getValue()).find(q => q.line === line);
+      if (match) openSoqlBuilder(match.query);
+    });
 
     // Register Ctrl+S / Cmd+S for save
     editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
@@ -171,14 +208,30 @@ export default function CodeEditor({ classId, code, className }: CodeEditorProps
             💾 Save
           </button>
           {isTestClass && (
-            <button 
-              className="toolbar-btn toolbar-btn-test"
-              onClick={handleRunTests}
-              disabled={isRunningTest}
-              title="Run Tests"
-            >
-              {isRunningTest ? '⏳ Running...' : '▶️ Run Tests'}
-            </button>
+            <>
+              <label
+                className="toolbar-test-parallel"
+                title="Parallel runs test methods concurrently (Developer Console default). Uncheck for serial execution."
+              >
+                <input
+                  type="checkbox"
+                  checked={testRunSettings.parallel}
+                  onChange={e => setTestRunParallel(e.target.checked)}
+                  disabled={isRunningTest}
+                />
+                Parallel
+              </label>
+              <button
+                className="toolbar-btn toolbar-btn-test"
+                onClick={handleRunTests}
+                disabled={isRunningTest}
+                title={testRunSettings.parallel
+                  ? 'Run tests in parallel (async)'
+                  : 'Run tests serially (sync)'}
+              >
+                {isRunningTest ? '⏳ Running...' : '▶️ Run Tests'}
+              </button>
+            </>
           )}
         </div>
       </div>

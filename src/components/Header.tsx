@@ -5,6 +5,9 @@ import './Header.css';
 
 export default function Header() {
   const {
+    openSoqlBuilder,
+    closeSoqlBuilder,
+    soqlBuilderOpen,
     openDiffChecker,
     closeDiffChecker,
     diffCheckerOpen,
@@ -22,6 +25,12 @@ export default function Header() {
       </div>
       
       <div className="header-actions">
+        <button
+          className={`header-btn ${soqlBuilderOpen ? 'header-btn-active' : ''}`}
+          onClick={() => (soqlBuilderOpen ? closeSoqlBuilder() : openSoqlBuilder())}
+        >
+          SOQL Query
+        </button>
         <button
           className={`header-btn ${diffCheckerOpen ? 'header-btn-active' : ''}`}
           onClick={() => (diffCheckerOpen ? closeDiffChecker() : openDiffChecker())}

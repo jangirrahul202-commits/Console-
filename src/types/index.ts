@@ -62,16 +62,54 @@ export interface LastTestRunInfo {
   timestamp: string;
 }
 
+export interface TestRunSettings {
+  /** Run test methods in parallel (async), like Developer Console default */
+  parallel: boolean;
+}
+
+export type TestExecutionMode = 'parallel' | 'serial';
+export type TestRunStatus = 'running' | 'completed' | 'failed';
+
 export interface TestRunResult {
   classId: string;
   className: string;
+  status: TestRunStatus;
   timestamp: string;
+  startedAt: string;
   totalTests: number;
   passed: number;
   failed: number;
   skipped: number;
   tests: TestResult[];
   runTime: number;
+  executionMode?: TestExecutionMode;
+  error?: string | null;
+  methodsCompleted?: number;
+  methodsEnqueued?: number;
+}
+
+export interface SyncTestSuccess {
+  id: string;
+  methodName: string;
+  name: string;
+  namespace: string | null;
+  time: number;
+}
+
+export interface SyncTestFailure {
+  id: string;
+  methodName: string;
+  name: string;
+  message: string;
+  stackTrace: string;
+  time: number;
+  type: string;
+}
+
+export interface SyncTestRunResult {
+  totalTime: number;
+  successes: SyncTestSuccess[];
+  failures: SyncTestFailure[];
 }
 
 // Linting & Problems
@@ -93,18 +131,73 @@ export interface SalesforceObject {
   custom: boolean;
 }
 
+export interface PicklistValue {
+  value: string;
+  label: string;
+  active?: boolean;
+}
+
 export interface SalesforceField {
   name: string;
   label: string;
   type: string;
   referenceTo: string[];
+  relationshipName?: string;
   custom: boolean;
+  picklistValues?: PicklistValue[];
+}
+
+export interface SoqlFetchProgress {
+  fetched: number;
+  total: number;
+  page: number;
+}
+
+export interface SoqlFieldSuggestion {
+  path: string;
+  label: string;
+  type: string;
+  objectName: string;
+  objectLabel: string;
+  isRelationship: boolean;
+  /** Relationship drill entry ending with "." — opens related object fields */
+  isRelDrill?: boolean;
+}
+
+export interface FieldSuggestionContext {
+  contextObject: string;
+  contextObjectLabel: string;
+  relationshipPrefix: string;
+  fieldPartial: string;
 }
 
 export interface QueryResult {
   totalSize: number;
   done: boolean;
-  records: any[];
+  records: Record<string, unknown>[];
+  nextRecordsUrl?: string;
+}
+
+export interface SavedSoqlQuery {
+  id: string;
+  label: string;
+  query: string;
+  savedAt: number;
+}
+
+export interface SoqlQueryHistoryEntry {
+  query: string;
+  ranAt: number;
+  recordCount: number;
+  durationMs: number;
+}
+
+export interface SoqlExplainResult {
+  plans: Array<{
+    cardinality?: number;
+    leadingOperationType?: string;
+    notes?: Array<{ title?: string; description?: string }>;
+  }>;
 }
 
 // Debug Logs
@@ -212,6 +305,20 @@ export interface ApexTestQueueItem {
   Id: string;
   Status: string;
   ApexClassId: string;
+  ParentJobId?: string;
+  TestRunResultId?: string;
+}
+
+export interface ApexTestRunProgress {
+  jobId: string;
+  isComplete: boolean;
+  isFailed: boolean;
+  jobStatus?: string;
+  runStatus?: string;
+  methodsCompleted: number;
+  methodsEnqueued: number;
+  classesCompleted: number;
+  classesEnqueued: number;
 }
 
 export interface ApexTestResult {
@@ -261,6 +368,8 @@ export interface ApexStoreState {
   // Test Results
   testResults: Map<string, TestRunResult>;
   isRunningTest: boolean;
+  testRunSettings: TestRunSettings;
+  selectedTestClassIds: string[];
   
   // Debug Logs
   debugLogs: ApexLog[];
@@ -273,6 +382,11 @@ export interface ApexStoreState {
   soqlObjectFields: Map<string, SalesforceField[]>;
   soqlQueryResult: QueryResult | null;
   soqlInitialQuery: string | null;
+  soqlLoading: boolean;
+  soqlError: string | null;
+  soqlLastDurationMs: number | null;
+  soqlFetchProgress: SoqlFetchProgress | null;
+  soqlCancelRequested: boolean;
   
   // Diff Checker
   diffCheckerOpen: boolean;
@@ -298,13 +412,19 @@ export interface ApexStoreState {
   selectClass: (classId: string) => Promise<void>;
   saveCode: (body: string) => Promise<void>;
   runTests: (classId: string) => Promise<void>;
+  runTestsForClasses: (classIds: string[]) => Promise<void>;
+  toggleTestClassSelection: (classId: string) => void;
+  clearTestClassSelection: () => void;
+  setTestRunParallel: (parallel: boolean) => void;
   fetchCoverage: (classId: string) => Promise<void>;
   fetchAllCoverage: () => Promise<void>;
   fetchCoverageContributors: (classId: string) => Promise<void>;
   refreshClassFromOrg: (classId: string) => Promise<void>;
   openSoqlBuilder: (initialQuery?: string) => void;
   closeSoqlBuilder: () => void;
-  executeSoqlQuery: (query: string) => Promise<void>;
+  executeSoqlQuery: (query: string, options?: { toolingApi?: boolean; fetchAll?: boolean }) => Promise<void>;
+  cancelSoqlQuery: () => void;
+  setSoqlError: (error: string | null) => void;
   getAllObjects: () => Promise<void>;
   getObjectFields: (objectName: string) => Promise<void>;
   openDiffChecker: () => void;

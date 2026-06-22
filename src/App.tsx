@@ -6,6 +6,7 @@ import CodeEditor from './components/CodeEditor';
 import UnifiedBottomPanel from './components/UnifiedBottomPanel';
 import ProblemsPanel from './components/ProblemsPanel';
 import InlineDiffChecker from './components/InlineDiffChecker';
+import SoqlQueryBuilder from './components/SoqlQueryBuilder';
 import LoadingSpinner from './components/LoadingSpinner';
 import { TabBar } from './components/TabBar';
 import './App.css';
@@ -17,6 +18,7 @@ function App() {
     classBody,
     isLoading,
     diffCheckerOpen,
+    soqlBuilderOpen,
     setSession,
     problems,
     error,
@@ -87,6 +89,15 @@ function App() {
     return (
       <div className="app-loading">
         <LoadingSpinner message="Initializing Console+..." size="large" />
+      </div>
+    );
+  }
+
+  if (soqlBuilderOpen) {
+    return (
+      <div className="app">
+        <Header />
+        <SoqlQueryBuilder />
       </div>
     );
   }

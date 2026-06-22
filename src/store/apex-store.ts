@@ -4,13 +4,19 @@ import { create } from 'zustand';
 import type {
   ApexClassWithBody,
   CoverageResult,
-  TestRunResult,
   ApexStoreState,
   ApexLog,
   EditorTab
 } from '../types';
 import { SalesforceAPI } from '../api/salesforce-api';
 import { lintApexCode } from '../utils/linter';
+import {
+  createRunningTestResult,
+  createCompletedTestResult,
+  createFailedTestResult,
+  applyPartialTestResults
+} from '../utils/test-run';
+import type { ApexTestResult } from '../types';
 
 export const useApexStore = create<ApexStoreState>((set, get) => ({
   // Initial state
@@ -25,6 +31,8 @@ export const useApexStore = create<ApexStoreState>((set, get) => ({
   coverageContributors: new Map(),
   testResults: new Map(),
   isRunningTest: false,
+  testRunSettings: { parallel: true },
+  selectedTestClassIds: [],
   debugLogs: [],
   selectedDebugLog: null,
   debugLogAnalysis: null,
@@ -33,6 +41,11 @@ export const useApexStore = create<ApexStoreState>((set, get) => ({
   soqlObjectFields: new Map(),
   soqlQueryResult: null,
   soqlInitialQuery: null,
+  soqlLoading: false,
+  soqlError: null,
+  soqlLastDurationMs: null,
+  soqlFetchProgress: null,
+  soqlCancelRequested: false,
   diffCheckerOpen: false,
   diffOriginalCode: '',
   diffComparisonCode: '',
@@ -337,87 +350,261 @@ export const useApexStore = create<ApexStoreState>((set, get) => ({
   },
 
   runTests: async (classId) => {
-    const { session, classes, testResults } = get();
+    await get().runTestsForClasses([classId]);
+  },
+
+  runTestsForClasses: async (classIds) => {
+    const uniqueIds = [...new Set(classIds)].filter(Boolean);
+    if (!uniqueIds.length) return;
+
+    const { session, classes, testRunSettings } = get();
     if (!session) return;
 
-    const testClass = classes.find(c => c.Id === classId);
-    if (!testClass) return;
+    const testClasses = uniqueIds
+      .map(id => classes.find(c => c.Id === id))
+      .filter((c): c is NonNullable<typeof c> => Boolean(c));
 
-    set({ isRunningTest: true, error: null });
+    if (!testClasses.length) return;
+
+    const parallel = testRunSettings.parallel;
+    const multiClass = testClasses.length > 1;
+
+    const markClassesRunning = () => {
+      const runningResults = new Map(get().testResults);
+      for (const testClass of testClasses) {
+        runningResults.set(testClass.Id, createRunningTestResult(testClass.Id, testClass.Name));
+      }
+      set({ isRunningTest: true, error: null, testResults: runningResults });
+    };
+
+    const saveClassResult = (result: ReturnType<typeof createCompletedTestResult>) => {
+      const updated = new Map(get().testResults);
+      updated.set(result.classId, result);
+      set({ testResults: updated });
+    };
+
+    const mapApiTestResults = (results: ApexTestResult[]) =>
+      results.map(r => ({
+        Id: r.Id,
+        ApexClassId: r.ApexClassId,
+        TestTimestamp: r.TestTimestamp,
+        Outcome: r.Outcome,
+        MethodName: r.MethodName,
+        Message: r.Message,
+        StackTrace: r.StackTrace,
+        ApexLogId: null,
+        RunTime: r.RunTime
+      }));
+
+    const applyPartialResultsForJob = (
+      api: SalesforceAPI,
+      jobId: string,
+      progress?: { methodsCompleted?: number; methodsEnqueued?: number }
+    ) => {
+      void api.fetchTestResultsByJobId(jobId).then(results => {
+        if (!results.length) return;
+        const updated = new Map(get().testResults);
+        for (const testClass of testClasses) {
+          const existing = updated.get(testClass.Id);
+          if (!existing || existing.status !== 'running') continue;
+          const classResults = results.filter(r => r.ApexClassId === testClass.Id);
+          if (!classResults.length) continue;
+          updated.set(
+            testClass.Id,
+            applyPartialTestResults(existing, mapApiTestResults(classResults), progress)
+          );
+        }
+        set({ testResults: updated });
+      }).catch(err => console.warn('Partial test result fetch failed:', err));
+    };
+
+    const mapSyncTests = (classId: string, timestamp: string, syncResult: Awaited<ReturnType<SalesforceAPI['runTestsSynchronous']>>) => {
+      return [
+        ...(syncResult.successes ?? []).map(s => ({
+          Id: s.id,
+          ApexClassId: classId,
+          TestTimestamp: timestamp,
+          Outcome: 'Pass' as const,
+          MethodName: s.methodName,
+          Message: null,
+          StackTrace: null,
+          ApexLogId: null,
+          RunTime: s.time
+        })),
+        ...(syncResult.failures ?? []).map(f => ({
+          Id: f.id,
+          ApexClassId: classId,
+          TestTimestamp: timestamp,
+          Outcome: 'Fail' as const,
+          MethodName: f.methodName,
+          Message: f.message,
+          StackTrace: f.stackTrace,
+          ApexLogId: null,
+          RunTime: f.time
+        }))
+      ];
+    };
+
+    markClassesRunning();
+
+    let asyncJobId: string | null = null;
 
     try {
       const api = new SalesforceAPI(session.instanceUrl, session.sessionId);
-      const queueId = await api.runTests(classId);
-      
-      if (!queueId) {
-        throw new Error('Failed to start test run. No queue ID returned.');
-      }
+      const timestamp = new Date().toISOString();
 
-      // Poll for test completion
-      let completed = false;
-      let attempts = 0;
-      const maxAttempts = 60;
-
-      while (!completed && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
+      if (parallel || multiClass) {
         try {
-          const queueItems = await api.checkTestQueueStatus(queueId);
-          completed = queueItems.every(item => item.Status === 'Completed');
-          attempts++;
-        } catch (pollError) {
-          console.error('Error polling test status:', pollError);
-          attempts++;
+          await api.setApexTestExecutionOptions(false);
+        } catch (optionsError) {
+          console.warn('Could not set parallel test options; using org default.', optionsError);
         }
       }
 
-      if (!completed) {
-        throw new Error('Test execution timeout after ' + (maxAttempts * 2) + ' seconds');
+      if (!parallel && !multiClass) {
+        const classId = testClasses[0].Id;
+        const startedAt = get().testResults.get(classId)?.startedAt ?? timestamp;
+        const syncResult = await api.runTestsSynchronous(classId);
+        const tests = mapSyncTests(classId, timestamp, syncResult);
+        saveClassResult(createCompletedTestResult(classId, testClasses[0].Name, tests, {
+          runTime: syncResult.totalTime ?? tests.reduce((sum, t) => sum + (t.RunTime || 0), 0),
+          executionMode: 'serial',
+          timestamp,
+          startedAt
+        }));
+      } else if (!parallel && multiClass) {
+        for (const testClass of testClasses) {
+          const startedAt = get().testResults.get(testClass.Id)?.startedAt ?? timestamp;
+          const syncResult = await api.runTestsSynchronous(testClass.Id);
+          const tests = mapSyncTests(testClass.Id, timestamp, syncResult);
+          saveClassResult(createCompletedTestResult(testClass.Id, testClass.Name, tests, {
+            runTime: syncResult.totalTime ?? tests.reduce((sum, t) => sum + (t.RunTime || 0), 0),
+            executionMode: 'serial',
+            timestamp,
+            startedAt
+          }));
+        }
+      } else {
+        asyncJobId = await api.runTestsAsynchronous(uniqueIds);
+
+        if (!asyncJobId) {
+          throw new Error('Failed to start test run. No async job ID returned.');
+        }
+
+        const timeoutMs = Math.max(600_000, testClasses.length * 180_000);
+        let lastMethodsCompleted = 0;
+
+        await api.waitForAsyncTestRun(asyncJobId, {
+          timeoutMs,
+          onProgress: async progress => {
+            if (
+              progress.methodsCompleted > lastMethodsCompleted
+              || (progress.isComplete && progress.methodsCompleted > 0)
+            ) {
+              lastMethodsCompleted = progress.methodsCompleted;
+              applyPartialResultsForJob(api, asyncJobId!, {
+                methodsCompleted: progress.methodsCompleted,
+                methodsEnqueued: progress.methodsEnqueued
+              });
+            }
+          }
+        });
+
+        const results = await api.fetchTestResultsByJobId(asyncJobId);
+
+        for (const testClass of testClasses) {
+          const startedAt = get().testResults.get(testClass.Id)?.startedAt ?? timestamp;
+          const classResults = results.filter(r => r.ApexClassId === testClass.Id);
+          saveClassResult(createCompletedTestResult(testClass.Id, testClass.Name, mapApiTestResults(classResults), {
+            runTime: classResults.reduce((sum, r) => sum + (r.RunTime || 0), 0),
+            executionMode: 'parallel',
+            timestamp,
+            startedAt
+          }));
+        }
       }
 
-      // Fetch test results
-      const results = await api.fetchTestResults(queueId);
-      
-      const testRunResult: TestRunResult = {
-        classId: classId,
-        className: testClass.Name,
-        timestamp: new Date().toISOString(),
-        totalTests: results.length,
-        passed: results.filter(r => r.Outcome === 'Pass').length,
-        failed: results.filter(r => r.Outcome === 'Fail').length,
-        skipped: results.filter(r => r.Outcome === 'Skip').length,
-        tests: results.map(r => ({
-          Id: r.Id,
-          ApexClassId: r.ApexClassId,
-          TestTimestamp: r.TestTimestamp,
-          Outcome: r.Outcome,
-          MethodName: r.MethodName,
-          Message: r.Message,
-          StackTrace: r.StackTrace,
-          ApexLogId: null,
-          RunTime: r.RunTime
-        })),
-        runTime: results.reduce((sum, r) => sum + (r.RunTime || 0), 0)
-      };
-
-      const newTestResults = new Map(testResults);
-      newTestResults.set(classId, testRunResult);
-
+      const lastClass = testClasses[testClasses.length - 1];
       set({
-        testResults: newTestResults,
         isRunningTest: false,
         lastTestRun: {
-          testClassId: classId,
-          testClassName: testClass.Name,
-          timestamp: new Date().toISOString()
+          testClassId: lastClass.Id,
+          testClassName: multiClass
+            ? `${testClasses.length} test classes`
+            : lastClass.Name,
+          timestamp
         }
       });
 
       await get().fetchAllCoverage();
     } catch (error: any) {
       console.error('Test run error:', error);
-      set({ error: 'Test run failed: ' + error.message, isRunningTest: false });
+
+      // Recover: Salesforce may have finished even if our poll timed out
+      if (asyncJobId && session) {
+        try {
+          const api = new SalesforceAPI(session.instanceUrl, session.sessionId);
+          const recovered = await api.fetchTestResultsByJobId(asyncJobId);
+          if (recovered.length > 0) {
+            const timestamp = new Date().toISOString();
+            const recoveredResults = new Map(get().testResults);
+            for (const testClass of testClasses) {
+              const startedAt = recoveredResults.get(testClass.Id)?.startedAt ?? timestamp;
+              const classResults = recovered.filter(r => r.ApexClassId === testClass.Id);
+              if (!classResults.length) continue;
+              recoveredResults.set(
+                testClass.Id,
+                createCompletedTestResult(testClass.Id, testClass.Name, mapApiTestResults(classResults), {
+                  runTime: classResults.reduce((sum, r) => sum + (r.RunTime || 0), 0),
+                  executionMode: 'parallel',
+                  timestamp,
+                  startedAt
+                })
+              );
+            }
+            set({
+              testResults: recoveredResults,
+              isRunningTest: false,
+              error: null
+            });
+            await get().fetchAllCoverage();
+            return;
+          }
+        } catch (recoverError) {
+          console.warn('Test result recovery failed:', recoverError);
+        }
+      }
+
+      const failedResults = new Map(get().testResults);
+      for (const id of uniqueIds) {
+        const existing = failedResults.get(id);
+        if (existing?.status === 'running') {
+          failedResults.set(id, createFailedTestResult(id, existing.className, error.message, existing));
+        }
+      }
+      set({
+        testResults: failedResults,
+        error: 'Test run failed: ' + error.message,
+        isRunningTest: false
+      });
     }
+  },
+
+  toggleTestClassSelection: (classId) => {
+    set(state => {
+      const selected = state.selectedTestClassIds.includes(classId)
+        ? state.selectedTestClassIds.filter(id => id !== classId)
+        : [...state.selectedTestClassIds, classId];
+      return { selectedTestClassIds: selected };
+    });
+  },
+
+  clearTestClassSelection: () => set({ selectedTestClassIds: [] }),
+
+  setTestRunParallel: (parallel) => {
+    const testRunSettings = { parallel };
+    set({ testRunSettings });
+    void chrome.storage.local.set({ testRunSettings });
   },
 
   fetchCoverage: async (classId) => {
@@ -507,20 +694,49 @@ export const useApexStore = create<ApexStoreState>((set, get) => ({
     });
   },
 
-  executeSoqlQuery: async (query) => {
+  executeSoqlQuery: async (query, options = {}) => {
     const { session } = get();
     if (!session) return;
 
-    set({ isLoading: true, error: null });
+    const start = performance.now();
+    set({
+      soqlLoading: true,
+      soqlError: null,
+      soqlCancelRequested: false,
+      soqlFetchProgress: null
+    });
 
     try {
       const api = new SalesforceAPI(session.instanceUrl, session.sessionId);
-      const result = await api.executeQuery(query);
-      set({ soqlQueryResult: result, isLoading: false });
+      const result = options.fetchAll !== false
+        ? await api.executeQueryAll(query, options.toolingApi, {
+            onProgress: (fetched, total, page) => {
+              set({ soqlFetchProgress: { fetched, total, page } });
+            },
+            shouldCancel: () => get().soqlCancelRequested
+          })
+        : await api.executeQuery(query, options.toolingApi);
+      set({
+        soqlQueryResult: result,
+        soqlLoading: false,
+        soqlFetchProgress: null,
+        soqlLastDurationMs: Math.round(performance.now() - start)
+      });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      const cancelled = get().soqlCancelRequested;
+      set({
+        soqlError: cancelled ? 'Query cancelled' : error.message,
+        soqlLoading: false,
+        soqlFetchProgress: null,
+        soqlLastDurationMs: null,
+        soqlCancelRequested: false
+      });
     }
   },
+
+  cancelSoqlQuery: () => set({ soqlCancelRequested: true }),
+
+  setSoqlError: (error) => set({ soqlError: error }),
 
   getAllObjects: async () => {
     const { session } = get();
@@ -549,6 +765,17 @@ export const useApexStore = create<ApexStoreState>((set, get) => ({
       const newFields = new Map(soqlObjectFields);
       newFields.set(objectName, fields);
       set({ soqlObjectFields: newFields });
+
+      // Prefetch lookup / master-detail related object fields for __r suggestions
+      const refs = new Set<string>();
+      for (const f of fields) {
+        if (f.referenceTo?.[0]) refs.add(f.referenceTo[0]);
+      }
+      for (const ref of refs) {
+        if (!get().soqlObjectFields.has(ref)) {
+          void get().getObjectFields(ref);
+        }
+      }
     } catch (error: any) {
       console.error('Failed to fetch fields:', error);
     }
@@ -794,5 +1021,11 @@ chrome.storage.local.get(['session'], (result) => {
 chrome.storage.local.get(['aiSettings'], (result) => {
   if (result.aiSettings) {
     useApexStore.setState({ aiSettings: result.aiSettings });
+  }
+});
+
+chrome.storage.local.get(['testRunSettings'], (result) => {
+  if (result.testRunSettings) {
+    useApexStore.setState({ testRunSettings: result.testRunSettings });
   }
 });

@@ -59,6 +59,28 @@
   cursor: not-allowed;
 }
 
+.toolbar-test-parallel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  padding: 0 4px;
+}
+
+.toolbar-test-parallel input {
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.toolbar-test-parallel:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .toolbar-btn-test {
   background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   font-weight: 600;

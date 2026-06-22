@@ -119,41 +119,4 @@ export function lintApexCode(code: string): LintProblem[] {
   return problems;
 }
 
-// Detect SOQL queries in code for the query builder feature
-export function detectSoqlQueries(code: string): Array<{ line: number; query: string }> {
-  const queries: Array<{ line: number; query: string }> = [];
-  const lines = code.split('\n');
-  
-  let inQuery = false;
-  let currentQuery = '';
-  let queryStartLine = 0;
-
-  lines.forEach((line, index) => {
-    const trimmedLine = line.trim();
-    
-    // Start of SOQL query
-    if (trimmedLine.match(/\[SELECT/i)) {
-      inQuery = true;
-      currentQuery = trimmedLine;
-      queryStartLine = index + 1;
-    } else if (inQuery) {
-      currentQuery += ' ' + trimmedLine;
-      
-      // End of SOQL query
-      if (trimmedLine.includes(']') || trimmedLine.includes('];')) {
-        // Extract the query without brackets
-        const queryMatch = currentQuery.match(/\[(SELECT[^\]]+)\]/i);
-        if (queryMatch) {
-          queries.push({
-            line: queryStartLine,
-            query: queryMatch[1].trim()
-          });
-        }
-        inQuery = false;
-        currentQuery = '';
-      }
-    }
-  });
-
-  return queries;
-}
+export { detectSoqlQueries } from './soql-detect';

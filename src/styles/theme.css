@@ -47,6 +47,16 @@
   --row-hover-bg: rgba(0, 122, 204, 0.08);
   --code-block-bg: #1a1a1a;
   --code-block-text: #cccccc;
+  --soql-bg: #181a1f;
+  --soql-surface: #22252b;
+  --soql-surface-2: #1e2128;
+  --soql-editor-bg: #14161a;
+  --soql-gutter: #1a1d24;
+  --soql-schema-bg: #1e2128;
+  --soql-chip-bg: #2a2e38;
+  --soql-grid-bg: #181a1f;
+  --soql-grid-header: #252830;
+  --soql-row-alt: rgba(255, 255, 255, 0.02);
 }
 
 [data-theme='light'] {
@@ -93,8 +103,18 @@
   --pill-good-text: #15803d;
   --row-selected-bg: rgba(0, 120, 212, 0.1);
   --row-hover-bg: rgba(0, 120, 212, 0.06);
-  --code-block-bg: #f5f5f5;
-  --code-block-text: #333333;
+  --code-block-bg: #fafbfc;
+  --code-block-text: #24292f;
+  --soql-bg: #f6f8fa;
+  --soql-surface: #ffffff;
+  --soql-surface-2: #f6f8fa;
+  --soql-editor-bg: #ffffff;
+  --soql-gutter: #f0f3f6;
+  --soql-schema-bg: #f6f8fa;
+  --soql-chip-bg: #ffffff;
+  --soql-grid-bg: #ffffff;
+  --soql-grid-header: #f0f3f6;
+  --soql-row-alt: rgba(0, 0, 0, 0.02);
 }
 
 * {
