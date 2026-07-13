@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Console+ for Salesforce",
   "version": "1.3.0",
-  "description": "Apex developer console with SOQL query builder, multi-tab editor, test results, code coverage, diff checker, and light/dark themes. Opens as a standalone window from Salesforce.",
+  "description": "Apex IDE for Salesforce: multi-tab editor, SOQL explorer, tests, coverage, and diff — opens as a standalone window.",
   "author": "Salesforce Developer Tools",
   "homepage_url": "https://github.com/salesforce-apex-console",
   "permissions": [
